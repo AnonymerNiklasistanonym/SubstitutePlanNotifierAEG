@@ -1,0 +1,12 @@
+[
+	{
+		"name": "Example_6a",
+		"url": "http://www.aeg-boeblingen.de/vertretungsplan/HTML/2_Ver_Kla_AEG_06A.htm",
+		"recipients": ["an.email@address.com", "another@one.com"]
+	},
+    {
+		"name": "Example_11",
+		"url": "http://www.aeg-boeblingen.de/vertretungsplan/HTML/2_Ver_Kla_AEG_11.htm",
+		"recipients": ["even.one@more.com"]
+	}
+]
