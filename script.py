@@ -222,7 +222,17 @@ def createHtmlMessage(table_data, class_url):
         html_message += html_data["tr-end"]
     html_message += html_data["middle"]
     html_message += class_url
+    html_message += html_data["space-between-link-and-text"]
+    html_message += html_data["linktext-plan"]
     html_message += html_data["bottom"]
+    html_message += html_data["bottom-text-01"]
+    html_message += html_data["bottom-text-space-01"]
+    html_message += html_data["bottom-text-02"]
+    html_message += html_data["bottom-text-space-02"]
+    html_message += html_data["bottom-text-03"]
+    html_message += html_data["bottom-text-space-03"]
+    html_message += html_data["bottom-text-04"]
+    html_message += html_data["end"]
 
     # html_message.encode('us-ascii', 'ignore')
     html_message.encode('ascii','xmlcharrefreplace')
@@ -353,7 +363,7 @@ if numberOfWebsites > 0:
         # if there is no old file, a new one, that is different to the old one continue
         if compareLists(old_json_table, new_json_table):
 
-            subject = html_data["title-subject"] + x["name"]
+            subject = moreData["title-subject"] + x["name"]
 
             message_text = createHtmlMessage(table_data, x["url"])
 
