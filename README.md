@@ -69,6 +69,12 @@ https://developers.google.com/gmail/api/quickstart/python
 
 And follow the comments in the script so that you have for your Google account all the files to use the API (`project-name.json`, `client_secret.json`).
 
+### How to change the email template?
+
+This is now very simple. Just keep an eye on the comments (don't delete them and if you delete sections you need to set tem somewhere else where it makes sense) and change everything like you want in the `data/email.html` file.
+
+Because if you after this step execute the script `data/html_email_to_html_json.py` the email html file will be perfectly converted to the `html.json` file which you can also edit and the program every run read.
+
 
 
 ## Questions or Ideas
