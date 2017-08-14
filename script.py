@@ -358,6 +358,23 @@ if numberOfWebsites > 0:
             new_json_table, old_json_table = None, None
             print("Website could not be crawled!")
             logging.warning("The website " + x["url"] + "could not be crawled")
+        # More catches thanks to https://stackoverflow.com/a/16511493/7827128
+        except requests.exceptions.HTTPError as e:
+            new_json_table, old_json_table = None, None
+            # http error (414, etc.)
+            logging.warning(e)
+        except requests.exceptions.Timeout as e:
+            new_json_table, old_json_table = None, None
+            # Maybe set up for a retry, or continue in a retry loop
+            logging.warning(e)
+        except requests.exceptions.TooManyRedirects as e:
+            new_json_table, old_json_table = None, None
+            # Tell the user their URL was bad and try a different one
+            logging.warning(e)
+        except requests.exceptions.RequestException as e:
+            new_json_table, old_json_table = None, None
+            # catastrophic error. bail.
+            logging.warning(e)
 
 
         # if there is no old file, a new one, that is different to the old one continue
