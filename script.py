@@ -4,16 +4,7 @@ This script scraps a table from a specific website, writes it in json format to 
 """
 
 # Gmail Imports (not important for the actual crawler)
-from __future__ import print_function
-import httplib2
-from apiclient import discovery
-from oauth2client import client
-from oauth2client import tools
-from oauth2client.file import Storage
-import base64
-from email.mime.text import MIMEText
-import os
-from apiclient import errors
+from SimplifiedGmailApiSubmodule.SendGmailSimplified import SimplifiedGmailApi
 
 # My imports (the crawler)
 import json
@@ -22,35 +13,39 @@ from bs4 import BeautifulSoup
 import re
 import logging
 import datetime
+import os
 
 # Paths for important directories and files - from home directory
 HOME_DIR = os.path.expanduser('~')
 
 # change this to the directory your script is: !!!!!!!!!!!!!!!!!
-DIR_OF_SCRIPT = os.path.join(HOME_DIR, "Documents/SubstitutePlanNotifierAEG")
-# "Documents/SimpleHtmlTableScraper")
-# "Documents/GitHubBeta/BasicWebScraper/script_for_cron_scheduler")
+DIR_OF_SCRIPT = os.path.join(HOME_DIR, os.path.join("Documents/GitHubBeta", "SubstitutePlanNotifierAEG"))
+# "Documents"
+# "Documents/GitHubBeta"
 
 PATH_FOR_LOG = os.path.join(DIR_OF_SCRIPT, "script.log")
 
 DIRECTORY_FOR_TABLES = os.path.join(DIR_OF_SCRIPT, 'tables')
 DIRECTORY_FOR_DATA = os.path.join(DIR_OF_SCRIPT, 'data')
-#'data_real')
-#'data')
-
-DIRECTORY_FOR_GMAIL_API = os.path.join(DIRECTORY_FOR_DATA, '.credentials')
-PATH_FOR_GMAIL_CREDENTIALS = os.path.join(DIRECTORY_FOR_DATA, 'gmail_credentials.json')
 
 PATH_FOR_WEBSITES = os.path.join(DIRECTORY_FOR_DATA, 'websites.json')
 PATH_FOR_HTML_FILE = os.path.join(DIRECTORY_FOR_DATA, 'html.json')
+
+
+# Setup the Gmail API - set USE_GMAIL False if you want to use the Simplified Gmail API
+USE_GMAIL = False
+if USE_GMAIL:
+    DIR_OF_GMAIL_API_FILES = os.path.join(DIR_OF_SCRIPT, os.path.join("SimplifiedGmailApiSubmodule", "gmail_api_files"))
+    PATH_OF_CLIENT_DATA = os.path.join(DIR_OF_GMAIL_API_FILES, "client_data.json")
+    PATH_OF_CLIENT_SECRET = os.path.join(DIR_OF_GMAIL_API_FILES, "client_secret.json")
+    GmailServer = SimplifiedGmailApi(PATH_OF_CLIENT_DATA, PATH_OF_CLIENT_SECRET, DIR_OF_GMAIL_API_FILES)
+
 
 # Check if the directory for the tables exists, if not create it
 if not os.path.exists(DIRECTORY_FOR_TABLES):
     os.makedirs(DIRECTORY_FOR_TABLES)
 
-# load all websites and recipients + more data
-with open(PATH_FOR_GMAIL_CREDENTIALS, "r") as credentials_file:
-    moreData = json.load(credentials_file)
+# load all websites and recipients
 with open(PATH_FOR_WEBSITES, "r") as websites_file:
     websites = json.load(websites_file)
     numberOfWebsites = len(websites)
@@ -59,103 +54,10 @@ with open(PATH_FOR_HTML_FILE, "r") as html_file:
     html_data = json.load(html_file)
 
 # log file
-logging.basicConfig(filename = PATH_FOR_LOG, level = logging.DEBUG)
+logging.basicConfig(filename=PATH_FOR_LOG, level=logging.DEBUG)
 
 
-# Gmail API methods:
-
-"""
-If you want to implement the Gmail API read this first: https://developers.google.com/gmail/api/quickstart/python
-You first need to activate the API over a Gmail account, then create OAuth client ID credentials and then
-understand (run) the example because of the permission scopes (https://developers.google.com/gmail/api/auth/scopes).
-"""
-
-def SendMessage(service, user_id, message):
-    """Send an email message.
-
-    Args:
-    service: Authorized Gmail API service instance.
-    user_id: User's email address. The special value "me"
-    can be used to indicate the authenticated user.
-    message: Message to be sent.
-
-    Returns:
-    Sent Message.
-    """
-    try:
-        message = (service.users().messages().send(userId=user_id, body=message)
-                   .execute())
-        print ('Message Id: %s' % message['id'])
-        return message
-    except errors.HttpError as error:
-        print ('An error occurred: %s' % error)
-        return None
-
-def CreateMessage(sender, to, subject, message_text):
-    """Create a message for an email.
-
-    Args:
-    sender: Email address of the sender.
-    to: Email address of the receiver.
-    subject: The subject of the email message.
-    message_text: The text of the email message.
-
-    Returns:
-    An object containing a base64url encoded email object.
-    """
-    # message_text.encode('us-ascii', 'ignore').decode('us-ascii', 'ignore')
-
-    message = MIMEText(message_text, 'html')
-    message['to'] = to
-    message['from'] = sender
-    message['subject'] = subject
-    return {'raw': base64.urlsafe_b64encode(message.as_string().encode())}
-
-def get_credentials():
-    """Gets valid user credentials from storage.
-
-    If nothing has been stored, or if the stored credentials are invalid,
-    the OAuth2 flow is completed to obtain the new credentials.
-
-    Returns:
-        Credentials, the obtained credential.
-    """
-
-    credential_dir = DIRECTORY_FOR_GMAIL_API
-    if not os.path.exists(credential_dir):
-        os.makedirs(credential_dir)
-    credential_path = os.path.join(credential_dir, 'gmail-python-quickstart.json')
-
-    store = Storage(credential_path)
-    credentials = store.get()
-    if not credentials or credentials.invalid:
-        flow = client.flow_from_clientsecrets(CLIENT_SECRET_FILE, SCOPES)
-        flow.user_agent = APPLICATION_NAME
-        if flags:
-            credentials = tools.run_flow(flow, store, flags)
-        else: # Needed only for compatibility with Python 2.6
-            credentials = tools.run(flow, store)
-        print('Storing credentials to ' + credential_path)
-    return credentials
-
-# Gmail API (needs to be here)
-try:
-    import argparse
-    flags = argparse.ArgumentParser(parents=[tools.argparser]).parse_args()
-except ImportError:
-    flags = None
-
-# The permission you want/need
-SCOPES = moreData["permission-scope"]
-# Path to the downloaded secret credentials file (the one you downloaded online)
-CLIENT_SECRET_FILE = os.path.join(DIRECTORY_FOR_GMAIL_API,"client_secret.json")
-# Name of the service (the one you created online)
-APPLICATION_NAME = moreData["application-name"]
-
-
-# scraper methods:
-
-def extract_important_inforamtion(table_data):
+def extract_important_information(table_data):
     """Clean the list strings.
 
     Remove the not important characters, spacwes, newlines, ecetera.
@@ -188,7 +90,8 @@ def extract_important_inforamtion(table_data):
 
     return table_data
 
-def createHtmlMessage(table_data, class_url):
+
+def create_html_message(table_data, class_url):
     """Create the HTML email.
 
     Args:
@@ -235,11 +138,12 @@ def createHtmlMessage(table_data, class_url):
     html_message += html_data["end"]
 
     # html_message.encode('us-ascii', 'ignore')
-    html_message.encode('ascii','xmlcharrefreplace')
+    html_message.encode('ascii', 'xmlcharrefreplace')
 
     return html_message
 
-def compareLists(old_list, new_list):
+
+def compare_lists(old_list, new_list):
     """Compare the two lists.
 
     Args:
@@ -337,11 +241,11 @@ if numberOfWebsites > 0:
             print("Extracted table from " + x["url"] + ":")
             print(table_data)
             # extract the important information from the list
-            table_data = extract_important_inforamtion(table_data)
+            table_data = extract_important_information(table_data)
             # convert table to JSON format
             new_json_table = (json.dumps(table_data))
 
-             # try to read latest version from filesystem
+            # try to read latest version from filesystem
             try:
                 test = os.stat(DIRECTORY_FOR_TABLES + "/" + x["name"] + ".json")
                 with open(DIRECTORY_FOR_TABLES + "/" + x["name"] + ".json", "r") as savedTable_file:
@@ -376,13 +280,12 @@ if numberOfWebsites > 0:
             # catastrophic error. bail.
             logging.warning(e)
 
-
         # if there is no old file, a new one, that is different to the old one continue
-        if compareLists(old_json_table, new_json_table):
+        if compare_lists(old_json_table, new_json_table):
 
-            subject = moreData["title-subject"] + x["name"]
+            subject = "Neuer Vertretungsplan Klasse " + x["name"]
 
-            message_text = createHtmlMessage(table_data, x["url"])
+            message_text = create_html_message(table_data, x["url"])
 
             message_text = re.sub(r'[^\x00-\x7F]+',' ', message_text)
 
@@ -398,19 +301,8 @@ if numberOfWebsites > 0:
             # 2. send it to all recipients an email with the change
             for y in x["recipients"]:
 
-                # create message
-                message = CreateMessage(moreData["email"], y, subject, message_text)
-                # create service (https://developers.google.com/gmail/api/quickstart/python)
+                if USE_GMAIL:
+                    GmailServer.send_html(y, subject, message_text)
 
-                credentials = get_credentials()
-                http = credentials.authorize(httplib2.Http())
-                service = discovery.build('gmail', 'v1', http=http)
-                # send the message
-                if SendMessage(service, "me", message) is not None:
-                    print("- succsessfully send to " + y)
-                    logging.info("email was successfully send to " + y)
-                else:
-                    print("WARNING - Message could not be send to " + y)
-                    logging.warning("email was not send to " + y)
         else:
             print("no changes to the class " + x["name"])
