@@ -81,7 +81,7 @@ $ git submodule update --init --recursive
 
 ```
 
-* Also follow the comments in the script so that you have for your Google account all the files to use the API (`project-name.json`, `client_secret.json`)
+* Also follow the comments in the script (or even better open the README.md in the submodule folder and follow it) so that you have for your Google account all the files to use the API (`project-name.json`, `client_secret.json`)
 
 After that you get the original API copied and then you can use it.
 
