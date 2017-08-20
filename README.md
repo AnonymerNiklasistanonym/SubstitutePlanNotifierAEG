@@ -1,6 +1,10 @@
 # SubstitutePlanNotifierAEG
 With this python script you can detect whether there is a new AEG Böblingen substitute plan public or not.
 
+**Virtual environment:** [How to setup and use `virtualenv` to run this script](VIRTUALENV.md)
+
+**GIT submodule:** [How to update, setup and use the SimplifiedGmailApi submodule](SUBMODULE_INSTRUCTIONS.md)
+
 
 
 ## Credits and info
