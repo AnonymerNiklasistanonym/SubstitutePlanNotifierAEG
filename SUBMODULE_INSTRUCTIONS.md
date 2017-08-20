@@ -27,3 +27,25 @@ Have fun programming! :smiley:
 
 
 *PS: If you want to use this submodule do not forget to activate the API in the main project script*
+
+
+
+## Bonus:
+
+### Update the submodule
+
+You used a newer version of the submodule and want to update the submodule link not only locally but on GitHub to this version:
+
+```
+git submodule update --remote --merge
+```
+
+Now the submodule file points to the current path the submodule is right now.
+
+### Add a submodule
+
+With this you can add a submodule yourself to a new directory of your current project:
+
+```
+git submodule add <project you want to use as submodule url> <directory name>
+```
