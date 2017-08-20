@@ -66,12 +66,24 @@ Then copy the script and the folder `data` into your home directory folder under
 Now just create a new `Cron`-job with the command 
 `python Documents/SubstitutePlanNotifierAEG/script.py` and say this job should be executed every 5/10/60 minutes.
 
-### The Gmail API extension
+## The Gmail API extension
 
-If you want to send on every change a email to yourself or others follow this tutorial:
+If you want to send on every change a email to yourself or others follow this quick tutorial (not really needed but it's quite short and you get it after that better):
 https://developers.google.com/gmail/api/quickstart/python
 
-And follow the comments in the script so that you have for your Google account all the files to use the API (`project-name.json`, `client_secret.json`).
+### How to use the SimplifiedGmailApi?
+
+* You can use the `SimplifiedGmailApi` by setting `USE_GMAIL= True` at the start of the main script.
+* If you download the repository and the submodule folder isn't there enter this:
+
+```
+$ git submodule update --init --recursive
+
+```
+
+* Also follow the comments in the script so that you have for your Google account all the files to use the API (`project-name.json`, `client_secret.json`)
+
+After that you get the original API copied and then you can use it.
 
 ### How to change the email template?
 
