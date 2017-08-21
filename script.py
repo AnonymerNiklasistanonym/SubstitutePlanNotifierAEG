@@ -19,7 +19,7 @@ import os
 HOME_DIR = os.path.expanduser('~')
 
 # change this to the directory your script is: !!!!!!!!!!!!!!!!!
-DIR_OF_SCRIPT = os.path.join(HOME_DIR, os.path.join("Documents/GitHubBeta", "SubstitutePlanNotifierAEG"))
+DIR_OF_SCRIPT = os.path.join(HOME_DIR, os.path.join("Documents", "SubstitutePlanNotifierAEG"))
 # "Documents"
 # "Documents/GitHubBeta"
 
