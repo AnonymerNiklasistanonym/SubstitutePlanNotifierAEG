@@ -74,11 +74,10 @@ https://developers.google.com/gmail/api/quickstart/python
 ### How to use the SimplifiedGmailApi?
 
 * You can use the `SimplifiedGmailApi` by setting `USE_GMAIL= True` at the start of the main script.
-* If you download the repository and the submodule folder isn't there enter this:
+* If you download the repository and the submodule folder is empty enter this:
 
 ```
 $ git submodule update --init --recursive
-
 ```
 
 * Also follow the comments in the script (or even better open the README.md in the submodule folder and follow it) so that you have for your Google account all the files to use the API (`project-name.json`, `client_secret.json`)
