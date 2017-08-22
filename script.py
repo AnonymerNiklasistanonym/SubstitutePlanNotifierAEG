@@ -1,6 +1,7 @@
 #!/bin/env python3
 """
-This script scraps a table from a specific website, writes it in json format to the file system and sends an email to the recipients.
+This script scraps a table from a specific website, writes it in json format to the file system
+and sends an email to the recipients.
 """
 
 # Gmail Imports (not important for the actual crawler)
@@ -14,6 +15,7 @@ import re
 import logging
 import datetime
 import os
+
 
 # Paths for important directories and files - from home directory
 HOME_DIR = os.path.expanduser('~')
@@ -39,6 +41,8 @@ if USE_GMAIL:
     PATH_OF_CLIENT_DATA = os.path.join(DIR_OF_GMAIL_API_FILES, "client_data.json")
     PATH_OF_CLIENT_SECRET = os.path.join(DIR_OF_GMAIL_API_FILES, "client_secret.json")
     GmailServer = SimplifiedGmailApi(PATH_OF_CLIENT_DATA, PATH_OF_CLIENT_SECRET, DIR_OF_GMAIL_API_FILES)
+else:
+    GmailServer = None
 
 
 # Check if the directory for the tables exists, if not create it
@@ -57,7 +61,7 @@ with open(PATH_FOR_HTML_FILE, "r") as html_file:
 logging.basicConfig(filename=PATH_FOR_LOG, level=logging.DEBUG)
 
 
-def extract_important_information(table_data):
+def extract_important_information(html_table):
     """Clean the list strings.
 
     Remove the not important characters, spacwes, newlines, ecetera.
@@ -70,28 +74,29 @@ def extract_important_information(table_data):
     """
 
     # for every row
-    for a in range(len(table_data)):
-            del table_data[a][0] # remove the first column (class id)
-            for b in range(len(table_data[a])):
-                new_text = table_data[a][b]
-                # remove newlines and more
-                new_text = "".join(new_text.split("-\n"))
-                new_text = "".join(new_text.split("\n"))
-                new_text = "".join(new_text.split("\r"))
-                # remove spaces (https://stackoverflow.com/a/21484372/7827128)
-                new_text = re.sub(r"^\s*(-\s*)?|(\s*-)?\s*$", "", new_text)
-                # special thing (German: "H. to Hour")
-                new_text = "Stunde".join(new_text.split("Std."))
-                table_data[a][b] = new_text
+    for a in range(len(html_table)):
+        # remove the first column (class id)
+        del html_table[a][0]
+        for b in range(len(html_table[a])):
+            new_text = html_table[a][b]
+            # remove newlines and more
+            new_text = "".join(new_text.split("-\n"))
+            new_text = "".join(new_text.split("\n"))
+            new_text = "".join(new_text.split("\r"))
+            # remove spaces (https://stackoverflow.com/a/21484372/7827128)
+            new_text = re.sub(r"^\s*(-\s*)?|(\s*-)?\s*$", "", new_text)
+            # special thing (German: "H. to Hour")
+            new_text = "Stunde".join(new_text.split("Std."))
+            html_table[a][b] = new_text
 
-                if b > 2:
-                    if not table_data[a][3]:
-                        table_data[a][b] = ""
+            if b > 2:
+                if not html_table[a][3]:
+                    html_table[a][b] = ""
 
-    return table_data
+    return html_table
 
 
-def create_html_message(table_data, class_url):
+def create_html_message(json_table, class_url):
     """Create the HTML email.
 
     Args:
@@ -107,20 +112,20 @@ def create_html_message(table_data, class_url):
     html_message += html_data["top"]
 
     # convert Json list to a custom and clean html table
-    for a in range(1, len(table_data)):
+    for a in range(1, len(json_table)):
         html_message += html_data["tr-start"]
-        if not table_data[a][3]:
-            for b in range(len(table_data[a])):
+        if not json_table[a][3]:
+            for b in range(len(json_table[a])):
                 html_message += html_data["td-start"] + html_data["strike-start"]
                 if b < 3:
-                    html_message += table_data[a][b]
+                    html_message += json_table[a][b]
                 else:
                     html_message += "---"
                 html_message += html_data["strike-end"] + html_data["td-end"]
         else:
-            for b in range(len(table_data[a])):
+            for b in range(len(json_table[a])):
                 html_message += html_data["td-start"]
-                html_message += table_data[a][b]
+                html_message += json_table[a][b]
                 html_message += html_data["td-end"]
         html_message += html_data["tr-end"]
     html_message += html_data["middle"]
@@ -158,15 +163,15 @@ def compare_lists(old_list, new_list):
     print(old_list)
     print("new list:")
     print(new_list)
-    if (old_list is None):
+    if old_list is None:
         message_old_list = str(old_list)
     else:
-        message_old_list = ''.join(map(str,old_list))
+        message_old_list = ''.join(map(str, old_list))
     logging.debug("old list: " + message_old_list)
-    if (new_list is None):
+    if new_list is None:
         message_new_list = str(new_list)
     else:
-        message_new_list = ''.join(map(str,new_list))
+        message_new_list = ''.join(map(str, new_list))
     logging.debug("new list: " + message_new_list)
 
     # check if there is even an new list
@@ -179,14 +184,16 @@ def compare_lists(old_list, new_list):
     if old_list is None:
         print("old_list is None")
         logging.info("Change because of: old list is None and new list is not None")
-        return True # at this point we know, that the new table isn't empty
+        # at this point we know, that the new table isn't empty
+        return True
 
     # check if one list is bigger than the other
     if len(old_list) != len(new_list):
         # not "not is" but "!=" is used because it doesn't work after 256:
         # https://stackoverflow.com/questions/2239737/is-it-better-to-use-is-or-for-number-comparison-in-python
         print("len(old_list) " + str(len(old_list)) + " is not len(new_list) " + str(len(new_list)))
-        logging.info("Change because of: old list (" + str(len(old_list)) + ") and new list (" + str(len(new_list)) + ") have different lengths")
+        logging.info("Change because of: old list (" + str(len(old_list)) + ") and new list (" + str(len(new_list))
+                     + ") have different lengths")
         return True
 
     # if they are the same size iterate over them to find a difference
@@ -194,7 +201,8 @@ def compare_lists(old_list, new_list):
         for b in range(len(new_list[a])):
             if new_list[a][b] is not old_list[a][b]:
                 print("new_list[a][b]:" + new_list[a][b] + " and old_list[a][b]: " + old_list[a][b])
-                logging.info("Change because of: at [" + str(a) + "][" + str(b) +"] old list is \"" + old_list[a][b] + "\" and new list is \"" + new_list[a][b] + "\"")
+                logging.info("Change because of: at [" + str(a) + "][" + str(b) + "] old list is \"" +
+                             old_list[a][b] + "\" and new list is \"" + new_list[a][b] + "\"")
                 return True
 
     # or not - they must be the same
@@ -237,7 +245,7 @@ if numberOfWebsites > 0:
             soup = BeautifulSoup(content, 'html.parser')
             table = soup.find_all('table')[1]
             # remove tags and create list(https://stackoverflow.com/a/18544794/7827128)
-            table_data = [[cell.text for cell in row("td")] for row in table ("tr")]
+            table_data = [[cell.text for cell in row("td")] for row in table("tr")]
             print("Extracted table from " + x["url"] + ":")
             print(table_data)
             # extract the important information from the list
@@ -283,26 +291,30 @@ if numberOfWebsites > 0:
         # if there is no old file, a new one, that is different to the old one continue
         if compare_lists(old_json_table, new_json_table):
 
-            subject = "Neuer Vertretungsplan Klasse " + x["name"]
-
-            message_text = create_html_message(table_data, x["url"])
-
-            message_text = re.sub(r'[^\x00-\x7F]+',' ', message_text)
-
-            print("Message:")
-            print(message_text.encode('ascii', 'xmlcharrefreplace').decode('ascii'))
-            print("send to")
-
             # 1. save new table as json file
             with open(DIRECTORY_FOR_TABLES + "/" + x["name"] + ".json", 'w') as file:
                 json.dump(table_data, file)
-                logging.debug("the file " + DIRECTORY_FOR_TABLES + "/" + x["name"] + ".json was successfully overwritten with the new list")
+                logging.debug("the file " + DIRECTORY_FOR_TABLES + "/" + x["name"] +
+                              ".json was successfully overwritten with the new list")
 
             # 2. send it to all recipients an email with the change
-            for y in x["recipients"]:
+            if USE_GMAIL and GmailServer is not None:
 
-                if USE_GMAIL:
-                    GmailServer.send_html(y, subject, message_text)
+                subject = "Neuer Vertretungsplan Klasse " + x["name"]
+
+                message_text = create_html_message(table_data, x["url"])
+
+                message_text = re.sub(r'[^\x00-\x7F]+', ' ', message_text)
+
+                print("Message:")
+                print(message_text.encode('ascii', 'xmlcharrefreplace').decode('ascii'))
+                print("send to")
+
+                for y in x["recipients"]:
+                    if GmailServer.send_html(y, subject, message_text):
+                        logging.info(">> Email was successfully sent to " + y)
+                    else:
+                        logging.debug(">> Email was not sent to " + y)
 
         else:
             print("no changes to the class " + x["name"])
