@@ -28,8 +28,13 @@ for x in content:
         elif x.find("top-title-end") != -1:
             json_list['title-body'] = walking_string
             walking_string = ""
-        elif x.find("table-placeholder-begin") != -1:
+        elif x.find("top-title-2-begin") != -1:
             json_list['top'] = walking_string
+            walking_string = ""
+        elif x.find("top-title-2-end") != -1:
+            walking_string = ""
+        elif x.find("table-placeholder-begin") != -1:
+            json_list['top2'] = walking_string
             walking_string = ""
         elif x.find("tr-nice-tag-open-begin") != -1:
             walking_string = ""

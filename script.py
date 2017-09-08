@@ -1,20 +1,22 @@
+# -*- coding: utf-8 -*-
+
 #!/bin/env python3
 """
 This script scraps a table from a specific website, writes it in json format to the file system
 and sends an email to the recipients.
 """
 
-# Gmail Imports (not important for the actual crawler)
-from SimplifiedGmailApiSubmodule.SendGmailSimplified import SimplifiedGmailApi
-
 # My imports (the crawler)
 import json
-import requests
-from bs4 import BeautifulSoup
 import re
 import logging
 import datetime
 import os
+import requests
+from bs4 import BeautifulSoup
+
+# Gmail Imports (not important for the actual crawler)
+from SimplifiedGmailApiSubmodule.SendGmailSimplified import SimplifiedGmailApi
 
 
 # Paths for important directories and files - from home directory
@@ -35,7 +37,7 @@ PATH_FOR_HTML_FILE = os.path.join(DIRECTORY_FOR_DATA, 'html.json')
 
 
 # Setup the Gmail API - set USE_GMAIL False if you want to use the Simplified Gmail API
-USE_GMAIL = False
+USE_GMAIL = True
 if USE_GMAIL:
     DIR_OF_GMAIL_API_FILES = os.path.join(DIR_OF_SCRIPT, os.path.join("SimplifiedGmailApiSubmodule", "gmail_api_files"))
     PATH_OF_CLIENT_DATA = os.path.join(DIR_OF_GMAIL_API_FILES, "client_data.json")
@@ -96,7 +98,7 @@ def extract_important_information(html_table):
     return html_table
 
 
-def create_html_message(json_table, class_url):
+def create_html_message(json_table, class_url, email_date_string):
     """Create the HTML email.
 
     Args:
@@ -110,6 +112,8 @@ def create_html_message(json_table, class_url):
     html_message = html_data["head"]
     html_message += html_data["title-body"]
     html_message += html_data["top"]
+    html_message += email_date_string
+    html_message += html_data["top2"]
 
     # convert Json list to a custom and clean html table
     for a in range(1, len(json_table)):
@@ -243,6 +247,9 @@ if numberOfWebsites > 0:
             print(content)
             # extract the second table
             soup = BeautifulSoup(content, 'html.parser')
+            email_date_string = str(soup.find_all('b')[2].get_text()).replace("Vertretungsplan Klassen", "").lstrip(" ")
+
+            #soup = BeautifulSoup(content, 'html.parser')
             table = soup.find_all('table')[1]
             # remove tags and create list(https://stackoverflow.com/a/18544794/7827128)
             table_data = [[cell.text for cell in row("td")] for row in table("tr")]
@@ -302,7 +309,7 @@ if numberOfWebsites > 0:
 
                 subject = "Neuer Vertretungsplan Klasse " + x["name"]
 
-                message_text = create_html_message(table_data, x["url"])
+                message_text = create_html_message(table_data, x["url"], email_date_string)
 
                 message_text = re.sub(r'[^\x00-\x7F]+', ' ', message_text)
 
