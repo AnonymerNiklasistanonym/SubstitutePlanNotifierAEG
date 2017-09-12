@@ -11,18 +11,20 @@ import json
 import logging
 import os
 import re
+
 import requests
 from bs4 import BeautifulSoup
 
 # Gmail Imports (not important for the actual crawler)
 from SimplifiedGmailApiSubmodule.SendGmailSimplified import SimplifiedGmailApi
 
+
 # Paths for important directories and files - from home directory
 HOME_DIR = os.path.expanduser('~')
 
 # change this to the directory your script is: !!!!!!!!!!!!!!!!!
-DIR_OF_SCRIPT = os.path.join(
-    HOME_DIR, os.path.join("Documents", "SubstitutePlanNotifierAEG"))
+DIR_OF_SCRIPT = os.path.join(HOME_DIR, os.path.join("Documents",
+                                                    "SubstitutePlanNotifierAEG"))
 # "Documents"
 # "Documents/GitHubBeta"
 
@@ -56,8 +58,8 @@ if not os.path.exists(DIRECTORY_FOR_TABLES):
 
 # load all websites and recipients
 with open(PATH_FOR_WEBSITES, "r") as websites_file:
-    WEBSITES = json.load(websites_file)
-    NUMBER_OF_ALL_WEBSITES = len(WEBSITES)
+    WEBSITES_JSON_DATA = json.load(websites_file)
+    NUMBER_OF_ALL_WEBSITES = len(WEBSITES_JSON_DATA)
 # load json with all html information
 with open(PATH_FOR_HTML_FILE, "r") as html_file:
     HTML_DATA = json.load(html_file)
@@ -239,98 +241,101 @@ logging.info("script started on " + DATE_STRING + " at " + TIME_STRING)
 if NUMBER_OF_ALL_WEBSITES > 0:
 
     # for every website get table
-    for x in WEBSITES:
+    for WEBSITE_JSON_DATA in WEBSITES_JSON_DATA:
 
-        print(">> Check for the class " + x["name"] + ":")
-        logging.info("check the website " + x["url"] + " for the class " + x["name"])
+        print(">> Check for the class " + WEBSITE_JSON_DATA["name"] + ":")
+        logging.info("check the website " + WEBSITE_JSON_DATA["url"] + " for the class "
+                     + WEBSITE_JSON_DATA["name"])
 
         # try to get it in the first place
         try:
             # get website
-            res = requests.get(x["url"])
+            res = requests.get(WEBSITE_JSON_DATA["url"])
             content = res.content
 
             print(content)
             # extract the second table
-            soup = BeautifulSoup(content, 'html.parser')
+            SOUP_HTML_DATA = BeautifulSoup(content, 'html.parser')
 
             # extract the date and the week number
-            email_date_string = str(soup.find_all('b')[2].get_text())
+            email_date_string = str(SOUP_HTML_DATA.find_all('b')[2].get_text())
             # remove a String and all whitespaces at the begin and the end
             email_date_string = email_date_string.replace("Vertretungsplan Klassen", "").lstrip(" ")
 
             #soup = BeautifulSoup(content, 'html.parser')
-            table = soup.find_all('table')[1]
+            table = SOUP_HTML_DATA.find_all('table')[1]
             # remove tags and create list(https://stackoverflow.com/a/18544794/7827128)
             table_data = [[cell.text for cell in row("td")] for row in table("tr")]
-            print("Extracted table from " + x["url"] + ":")
+            print("Extracted table from " + WEBSITE_JSON_DATA["url"] + ":")
             print(table_data)
             # extract the important information from the list
             table_data = extract_important_information(table_data)
             # convert table to JSON format
-            new_json_table = (json.dumps(table_data))
+            JSON_DATA_TABLE_NEW = (json.dumps(table_data))
 
             # try to read latest version from filesystem
             try:
-                test = os.stat(DIRECTORY_FOR_TABLES + "/" + x["name"] + ".json")
-                with open(DIRECTORY_FOR_TABLES + "/" + x["name"] + ".json", "r") as savedTable_file:
-                    old_json_table = json.load(savedTable_file)
+                test = os.stat(DIRECTORY_FOR_TABLES + "/" + WEBSITE_JSON_DATA["name"] + ".json")
+                with open(DIRECTORY_FOR_TABLES + "/" + WEBSITE_JSON_DATA["name"] + ".json",
+                          "r") as savedTable_file:
                     # convert the extracted JSON to a JSON (for comparison)
-                    old_json_table = (json.dumps(old_json_table))
+                    JSON_DATA_TABLE_OLD = (json.dumps(json.load(savedTable_file)))
             # when the file doesn't exists set it to None
             except os.error:
-                old_json_table = None
-                logging.warning("The file " + DIRECTORY_FOR_TABLES + "/" + x["name"]
+                JSON_DATA_TABLE_OLD = None
+                logging.warning("The file " + DIRECTORY_FOR_TABLES + "/" + WEBSITE_JSON_DATA["name"]
                                 + ".json was not found")
 
         # this error comes up when there is no Website
         except IndexError:
-            new_json_table, old_json_table = None, None
+            JSON_DATA_TABLE_NEW, JSON_DATA_TABLE_OLD = None, None
             print("Website could not be crawled!")
-            logging.warning("The website " + x["url"] + "could not be crawled")
+            logging.warning("The website " + WEBSITE_JSON_DATA["url"] + "could not be crawled")
         # More catches thanks to https://stackoverflow.com/a/16511493/7827128
         except requests.exceptions.HTTPError as exception1:
-            new_json_table, old_json_table = None, None
+            JSON_DATA_TABLE_NEW, JSON_DATA_TABLE_OLD = None, None
             # http error (414, etc.)
             logging.warning(exception1)
         except requests.exceptions.Timeout as exception2:
-            new_json_table, old_json_table = None, None
+            JSON_DATA_TABLE_NEW, JSON_DATA_TABLE_OLD = None, None
             # Maybe set up for a retry, or continue in a retry loop
             logging.warning(exception2)
         except requests.exceptions.TooManyRedirects as exception3:
-            new_json_table, old_json_table = None, None
+            JSON_DATA_TABLE_NEW, JSON_DATA_TABLE_OLD = None, None
             # Tell the user their URL was bad and try a different one
             logging.warning(exception3)
         except requests.exceptions.RequestException as exception4:
-            new_json_table, old_json_table = None, None
+            JSON_DATA_TABLE_NEW, JSON_DATA_TABLE_OLD = None, None
             # catastrophic error. bail.
             logging.warning(exception4)
 
         # if there is no old file, a new one, that is different to the old one continue
-        if compare_lists(old_json_table, new_json_table):
+        if compare_lists(JSON_DATA_TABLE_OLD, JSON_DATA_TABLE_NEW):
 
             # 1. save new table as json file
-            with open(DIRECTORY_FOR_TABLES + "/" + x["name"] + ".json", 'w') as file:
+            with open(DIRECTORY_FOR_TABLES + "/" + WEBSITE_JSON_DATA["name"] + ".json",
+                      'w') as file:
                 json.dump(table_data, file)
-                logging.debug("the file " + DIRECTORY_FOR_TABLES + "/" + x["name"] +
+                logging.debug("the file " + DIRECTORY_FOR_TABLES + "/" + WEBSITE_JSON_DATA["name"] +
                               ".json was successfully overwritten with the new list")
 
             # 2. send it to all recipients an email with the change
             if USE_GMAIL and GMAIL_SERVER is not None:
 
-                subject = "Neuer Vertretungsplan Klasse " + x["name"]
+                SUBJECT = "Neuer Vertretungsplan Klasse " + WEBSITE_JSON_DATA["name"]
 
-                message_text = create_html_message(table_data, x["url"], email_date_string)
+                MESSAGE_TEXT = create_html_message(table_data, WEBSITE_JSON_DATA["url"],
+                                                   email_date_string)
 
                 print("Message:")
-                print(message_text.encode('ascii', 'xmlcharrefreplace').decode('ascii'))
+                print(MESSAGE_TEXT.encode('ascii', 'xmlcharrefreplace').decode('ascii'))
                 print("send to")
 
-                for y in x["recipients"]:
-                    if GMAIL_SERVER.send_html(y, subject, message_text):
-                        logging.info(">> Email was successfully sent to " + y)
+                for RECIPIENT in WEBSITE_JSON_DATA["recipients"]:
+                    if GMAIL_SERVER.send_html(RECIPIENT, SUBJECT, MESSAGE_TEXT):
+                        logging.info(">> Email was successfully sent to " + RECIPIENT)
                     else:
-                        logging.debug(">> Email was not sent to " + y)
+                        logging.debug(">> Email was not sent to " + RECIPIENT)
 
         else:
-            print("no changes to the class " + x["name"])
+            print("no changes to the class " + WEBSITE_JSON_DATA["name"])
