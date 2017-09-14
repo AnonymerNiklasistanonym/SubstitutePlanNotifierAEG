@@ -123,13 +123,20 @@ def create_html_message(json_table, class_url, date_and_week):
     # convert Json list to a custom and clean html table
     for row in range(1, len(json_table)):
         html_message += HTML_DATA["tr-start"]
+        # check if something doesn't take place (check [3] = room = '')
         if not json_table[row][3]:
             for column, val in enumerate(json_table[row]):
-                html_message += HTML_DATA["td-start"] + HTML_DATA["strike-start"]
-                if column < 3:
-                    html_message += val
+                # Strike everything but the hour
+                if column != 0:
+                    html_message += HTML_DATA["td-start"] + HTML_DATA["strike-start"]
+                    # catch an empty descripton/room
+                    if val is "":
+                        # and add '---' for a better readability
+                        html_message += "---"
+                    else:
+                        html_message += val
                 else:
-                    html_message += "---"
+                    html_message += HTML_DATA["td-start"] + val
                 html_message += HTML_DATA["strike-end"] + HTML_DATA["td-end"]
         else:
             for column, val in enumerate(json_table[row]):
@@ -327,9 +334,9 @@ if NUMBER_OF_ALL_WEBSITES > 0:
                 MESSAGE_TEXT = create_html_message(table_data, WEBSITE_JSON_DATA["url"],
                                                    email_date_string)
 
-                print("Message:")
-                print(MESSAGE_TEXT.encode('ascii', 'xmlcharrefreplace').decode('ascii'))
-                print("send to")
+                #print("Message:")
+                #print(MESSAGE_TEXT.encode('ascii', 'xmlcharrefreplace').decode('ascii'))
+                print(" >>> Send messages:")
 
                 for RECIPIENT in WEBSITE_JSON_DATA["recipients"]:
                     if GMAIL_SERVER.send_html(RECIPIENT, SUBJECT, MESSAGE_TEXT):
