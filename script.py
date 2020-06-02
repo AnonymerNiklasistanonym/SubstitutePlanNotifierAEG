@@ -130,7 +130,7 @@ def create_html_message(json_table, class_url, date_and_week):
                 if column != 0:
                     html_message += HTML_DATA["td-start"] + HTML_DATA["strike-start"]
                     # catch an empty descripton/room
-                    if val is "":
+                    if val == "":
                         # and add '---' for a better readability
                         html_message += "---"
                     else:
